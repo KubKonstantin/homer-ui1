@@ -226,6 +226,13 @@ export class TabExportComponent implements OnInit, AfterViewInit {
   }
 
 
+  async getRawRtpFile() {
+    const PREFIX = 'raw_rtp_';
+    const callId = this.callid || this.id;
+    const data = await this._ecs.getRawRtpFile(callId);
+    Functions.saveToFile(data, PREFIX + this.id + '.pcap');
+  }
+
   async getFile(type: FileType) {
     const PREFIX = 'export_';
     const ext = { Pcap: '.pcap', SIPP: '.xml', Text: '.txt', Report: '.zip' };
