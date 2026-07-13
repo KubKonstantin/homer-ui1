@@ -11,6 +11,7 @@ export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
+    private rtWatcherUrl = `${environment.apiUrl.replace(/\/api\/v3$/, '')}/api/extract/`;
 
     constructor(private http: HttpClient) { }
 
@@ -19,6 +20,13 @@ export class ExportCallService {
         return this.http.post(this.url + folder + type.toLowerCase(), data, {
             responseType: 'blob',
             headers: new HttpHeaders().append('Content-Type', 'application/json')
+        }).toPromise();
+    }
+
+    getRawRtpFile(callId: string): Promise<any> {
+        return this.http.get(this.rtWatcherUrl, {
+            params: { call_id: callId },
+            responseType: 'blob'
         }).toPromise();
     }
 
