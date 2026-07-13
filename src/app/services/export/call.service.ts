@@ -16,7 +16,7 @@ interface WebappConfig {
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private webappConfigUrl = 'assets/webapp_config.json';
+    private webappConfigUrl = 'webapp_config.json';
     private rtWatcherUrl = this.normalizeUrl(environment.rtWatcherUrl);
     private rtWatcherUrlPromise: Promise<string>;
 
@@ -26,11 +26,18 @@ export class ExportCallService {
         return url.replace(/\/?$/, '/');
     }
 
+    private async loadWebappConfig(): Promise<WebappConfig> {
+        try {
+            return await this.http.get<WebappConfig>(this.webappConfigUrl).toPromise();
+        } catch (e) {
+            return {};
+        }
+    }
+
     private getRtWatcherUrl(): Promise<string> {
         if (!this.rtWatcherUrlPromise) {
-            this.rtWatcherUrlPromise = this.http.get<WebappConfig>(this.webappConfigUrl).toPromise()
-                .then(config => this.normalizeUrl(config?.RTWATCHER_API_PATH || config?.rtWatcherUrl || this.rtWatcherUrl))
-                .catch(() => this.rtWatcherUrl);
+            this.rtWatcherUrlPromise = this.loadWebappConfig()
+                .then(config => this.normalizeUrl(config?.RTWATCHER_API_PATH || config?.rtWatcherUrl || this.rtWatcherUrl));
         }
         return this.rtWatcherUrlPromise;
     }
