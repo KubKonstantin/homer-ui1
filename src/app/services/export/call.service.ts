@@ -5,15 +5,35 @@ import { environment } from '@environments/environment';
 
 export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 
+interface WebappConfig {
+    RTWATCHER_API_PATH?: string;
+    rtWatcherUrl?: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private rtWatcherUrl = `${environment.apiUrl.replace(/\/api\/v3$/, '')}/api/extract/`;
+    private webappConfigUrl = 'assets/webapp_config.json';
+    private rtWatcherUrl = this.normalizeUrl(environment.rtWatcherUrl);
+    private rtWatcherUrlPromise: Promise<string>;
 
     constructor(private http: HttpClient) { }
+
+    private normalizeUrl(url: string): string {
+        return url.replace(/\/?$/, '/');
+    }
+
+    private getRtWatcherUrl(): Promise<string> {
+        if (!this.rtWatcherUrlPromise) {
+            this.rtWatcherUrlPromise = this.http.get<WebappConfig>(this.webappConfigUrl).toPromise()
+                .then(config => this.normalizeUrl(config?.RTWATCHER_API_PATH || config?.rtWatcherUrl || this.rtWatcherUrl))
+                .catch(() => this.rtWatcherUrl);
+        }
+        return this.rtWatcherUrlPromise;
+    }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
         const folder = type === 'Report' ? '/transaction/' : '/messages/';
@@ -23,8 +43,9 @@ export class ExportCallService {
         }).toPromise();
     }
 
-    getRawRtpFile(callId: string): Promise<any> {
-        return this.http.get(this.rtWatcherUrl, {
+    async getRawRtpFile(callId: string): Promise<any> {
+        const rtWatcherUrl = await this.getRtWatcherUrl();
+        return this.http.get(rtWatcherUrl, {
             params: { call_id: callId },
             responseType: 'blob'
         }).toPromise();
