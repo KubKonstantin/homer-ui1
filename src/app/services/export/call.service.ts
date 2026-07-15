@@ -11,7 +11,7 @@ export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private rtWatcherUrl = `${environment.apiUrl.replace(/\/api\/v3$/, '')}/api/extract/`;
+    private rawRtpExportUrl = `${environment.apiUrl}/proxy/rtwatcher/extract`;
 
     constructor(private http: HttpClient) { }
 
@@ -24,7 +24,7 @@ export class ExportCallService {
     }
 
     getRawRtpFile(callId: string): Promise<any> {
-        return this.http.get(this.rtWatcherUrl, {
+        return this.http.get(this.rawRtpExportUrl, {
             params: { call_id: callId },
             responseType: 'blob'
         }).toPromise();
