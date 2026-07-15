@@ -24,9 +24,7 @@ interface WebappConfig {
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private webappConfigUrl = 'webapp_config.json';
-    private rtWatcherUrl = this.normalizeUrl(environment.rtWatcherUrl);
-    private rtWatcherUrlPromise: Promise<string>;
+    private rawRtpExportUrl = `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
 
     constructor(private http: HttpClient) { }
 
@@ -75,9 +73,8 @@ export class ExportCallService {
         }).toPromise();
     }
 
-    async getRawRtpFile(callId: string): Promise<any> {
-        const rtWatcherUrl = await this.getRtWatcherUrl();
-        return this.http.get(rtWatcherUrl, {
+    getRawRtpFile(callId: string): Promise<any> {
+        return this.http.get(this.rawRtpExportUrl, {
             params: { call_id: callId },
             responseType: 'blob'
         }).toPromise();
