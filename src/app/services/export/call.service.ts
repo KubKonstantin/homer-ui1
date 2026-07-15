@@ -28,7 +28,7 @@ export class ExportCallService {
 
     private getRawRtpExportUrl(rtWatcherServer: string): string {
         const server = rtWatcherServer || environment.rtWatcherServer;
-        return `${server.replace(/\/+$/, '')}/api/extract/`;
+        return `${server.replace(/\/+$/, '')}/api/extract`;
     }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
