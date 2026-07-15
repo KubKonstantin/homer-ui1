@@ -11,14 +11,24 @@ export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-
     constructor(private http: HttpClient) { }
+
+    private getRawRtpExportUrl(): string {
+        return `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
+    }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
         const folder = type === 'Report' ? '/transaction/' : '/messages/';
         return this.http.post(this.url + folder + type.toLowerCase(), data, {
             responseType: 'blob',
             headers: new HttpHeaders().append('Content-Type', 'application/json')
+        }).toPromise();
+    }
+
+    getRawRtpFile(callId: string): Promise<any> {
+        return this.http.get(this.getRawRtpExportUrl(), {
+            params: { call_id: callId },
+            responseType: 'blob'
         }).toPromise();
     }
 
