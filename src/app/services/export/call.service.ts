@@ -26,8 +26,9 @@ export class ExportCallService {
     private url = `${environment.apiUrl}/export/call`;
     constructor(private http: HttpClient) { }
 
-    private getRawRtpExportUrl(): string {
-        return `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
+    private getRawRtpExportUrl(rtWatcherServer: string): string {
+        const server = rtWatcherServer || environment.rtWatcherServer;
+        return `${server.replace(/\/+$/, '')}/api/extract/`;
     }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
@@ -38,8 +39,9 @@ export class ExportCallService {
         }).toPromise();
     }
 
-    getRawRtpFile(callId: string): Promise<any> {
-        return this.http.get(this.getRawRtpExportUrl(), {
+    getRawRtpFile(callId: string, rtWatcherServer = ''): Promise<any> {
+        const rawRtpExportUrl = this.getRawRtpExportUrl(rtWatcherServer);
+        return this.http.get(rawRtpExportUrl, {
             params: { call_id: callId },
             responseType: 'blob'
         }).toPromise();

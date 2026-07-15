@@ -39,6 +39,7 @@ export class TabExportComponent implements OnInit, AfterViewInit {
   isArchive = true;
   enableSIPP = false;
   enablePCAPSule = false;
+  rtWatcherServer = '';
 
   @Output() exportFlowAsPNG: EventEmitter<any> = new EventEmitter();
   @Output() ready: EventEmitter<any> = new EventEmitter();
@@ -64,6 +65,7 @@ export class TabExportComponent implements OnInit, AfterViewInit {
 
       this.enableSIPP = exportData?.exportsipp === true;
       this.enablePCAPSule = exportData?.pcapsule === true;
+      this.rtWatcherServer = exportData?.rtwatcher?.server || exportData?.rtWatcherServer || '';
 
 
       [this.listAdvancedCIDR] = advanced.data
@@ -229,7 +231,7 @@ export class TabExportComponent implements OnInit, AfterViewInit {
   async getRawRtpFile() {
     const PREFIX = 'raw_rtp_';
     const callId = this.callid || this.id;
-    const data = await this._ecs.getRawRtpFile(callId);
+    const data = await this._ecs.getRawRtpFile(callId, this.rtWatcherServer);
     Functions.saveToFile(data, PREFIX + this.id + '.pcap');
   }
 
