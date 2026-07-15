@@ -24,45 +24,10 @@ interface WebappConfig {
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private rawRtpExportUrl = `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
-
     constructor(private http: HttpClient) { }
 
-    private normalizeUrl(url: string): string {
-        return url.replace(/\/?$/, '/');
-    }
-
-    private joinUrl(base: string, path: string): string {
-        return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
-    }
-
-    private getRtWatcherUrlFromConfig(config: WebappConfig): string {
-        const rtWatcherConfig = config?.rtwatcher_config;
-        if (rtWatcherConfig?.enable !== false) {
-            if (rtWatcherConfig?.url) {
-                return rtWatcherConfig.url;
-            }
-            if (rtWatcherConfig?.host) {
-                return this.joinUrl(rtWatcherConfig.host, rtWatcherConfig.api || 'api/extract');
-            }
-        }
-        return config?.RTWATCHER_API_PATH || config?.rtWatcherUrl || this.rtWatcherUrl;
-    }
-
-    private async loadWebappConfig(): Promise<WebappConfig> {
-        try {
-            return await this.http.get<WebappConfig>(this.webappConfigUrl).toPromise();
-        } catch (e) {
-            return {};
-        }
-    }
-
-    private getRtWatcherUrl(): Promise<string> {
-        if (!this.rtWatcherUrlPromise) {
-            this.rtWatcherUrlPromise = this.loadWebappConfig()
-                .then(config => this.normalizeUrl(this.getRtWatcherUrlFromConfig(config)));
-        }
-        return this.rtWatcherUrlPromise;
+    private getRawRtpExportUrl(): string {
+        return `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
     }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
@@ -74,7 +39,7 @@ export class ExportCallService {
     }
 
     getRawRtpFile(callId: string): Promise<any> {
-        return this.http.get(this.rawRtpExportUrl, {
+        return this.http.get(this.getRawRtpExportUrl(), {
             params: { call_id: callId },
             responseType: 'blob'
         }).toPromise();
