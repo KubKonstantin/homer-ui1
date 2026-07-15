@@ -28,6 +28,14 @@
     </button>
   </mat-grid-tile>
   <mat-grid-tile>
+    <button mat-raised-button
+      class="setting-btn"
+      (click)="getRawRtpFile()">
+      <fa-icon icon="download"></fa-icon>
+      {{'tabExport.exportRawRtp'|translate}}
+    </button>
+  </mat-grid-tile>
+  <mat-grid-tile>
     <button class="setting-btn"
       mat-raised-button
       color="primary"

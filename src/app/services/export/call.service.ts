@@ -14,11 +14,24 @@ export class ExportCallService {
 
     constructor(private http: HttpClient) { }
 
+    private getRawRtpExportUrl(rtWatcherServer: string): string {
+        const server = rtWatcherServer || environment.rtWatcherServer;
+        return `${server.replace(/\/+$/, '')}/api/extract/`;
+    }
+
     postMessagesFile(data: any, type: FileType): Promise<any> {
         const folder = type === 'Report' ? '/transaction/' : '/messages/';
         return this.http.post(this.url + folder + type.toLowerCase(), data, {
             responseType: 'blob',
             headers: new HttpHeaders().append('Content-Type', 'application/json')
+        }).toPromise();
+    }
+
+    getRawRtpFile(callId: string, rtWatcherServer = ''): Promise<any> {
+        const rawRtpExportUrl = this.getRawRtpExportUrl(rtWatcherServer);
+        return this.http.get(rawRtpExportUrl, {
+            params: { call_id: callId },
+            responseType: 'blob'
         }).toPromise();
     }
 
