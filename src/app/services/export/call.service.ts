@@ -5,13 +5,25 @@ import { environment } from '@environments/environment';
 
 export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 
+interface RtWatcherConfig {
+    enable?: boolean;
+    host?: string;
+    api?: string;
+    url?: string;
+}
+
+interface WebappConfig {
+    RTWATCHER_API_PATH?: string;
+    rtWatcherUrl?: string;
+    rtwatcher_config?: RtWatcherConfig;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-
     constructor(private http: HttpClient) { }
 
     private getRawRtpExportUrl(rtWatcherServer: string): string {
