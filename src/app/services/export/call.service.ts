@@ -5,6 +5,19 @@ import { environment } from '@environments/environment';
 
 export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 
+interface RtWatcherConfig {
+    enable?: boolean;
+    host?: string;
+    api?: string;
+    url?: string;
+}
+
+interface WebappConfig {
+    RTWATCHER_API_PATH?: string;
+    rtWatcherUrl?: string;
+    rtwatcher_config?: RtWatcherConfig;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -14,6 +27,43 @@ export class ExportCallService {
     private rawRtpExportUrl = `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
 
     constructor(private http: HttpClient) { }
+
+    private normalizeUrl(url: string): string {
+        return url.replace(/\/?$/, '/');
+    }
+
+    private joinUrl(base: string, path: string): string {
+        return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+    }
+
+    private getRtWatcherUrlFromConfig(config: WebappConfig): string {
+        const rtWatcherConfig = config?.rtwatcher_config;
+        if (rtWatcherConfig?.enable !== false) {
+            if (rtWatcherConfig?.url) {
+                return rtWatcherConfig.url;
+            }
+            if (rtWatcherConfig?.host) {
+                return this.joinUrl(rtWatcherConfig.host, rtWatcherConfig.api || 'api/extract');
+            }
+        }
+        return config?.RTWATCHER_API_PATH || config?.rtWatcherUrl || this.rtWatcherUrl;
+    }
+
+    private async loadWebappConfig(): Promise<WebappConfig> {
+        try {
+            return await this.http.get<WebappConfig>(this.webappConfigUrl).toPromise();
+        } catch (e) {
+            return {};
+        }
+    }
+
+    private getRtWatcherUrl(): Promise<string> {
+        if (!this.rtWatcherUrlPromise) {
+            this.rtWatcherUrlPromise = this.loadWebappConfig()
+                .then(config => this.normalizeUrl(this.getRtWatcherUrlFromConfig(config)));
+        }
+        return this.rtWatcherUrlPromise;
+    }
 
     postMessagesFile(data: any, type: FileType): Promise<any> {
         const folder = type === 'Report' ? '/transaction/' : '/messages/';
