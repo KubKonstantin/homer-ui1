@@ -57,15 +57,15 @@ export class TabExportComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    this._pas.getAll().toPromise().then((advanced: any) => {
+    this._pas.getAll(0).toPromise().then((advanced: any) => {
 
       const [exportData] = advanced.data
         .filter(i => i.category === 'export' && i.param === 'transaction')
-        .map(i => i.data);
+        .map(i => this.parseAdvancedData(i.data));
 
       this.enableSIPP = exportData?.exportsipp === true;
       this.enablePCAPSule = exportData?.pcapsule === true;
-      this.rtWatcherServer = exportData?.rtwatcher?.server || exportData?.rtWatcherServer || '';
+      this.rtWatcherServer = this.getRtWatcherServerFromAdvanced(advanced, exportData);
 
 
       [this.listAdvancedCIDR] = advanced.data
@@ -117,6 +117,22 @@ export class TabExportComponent implements OnInit, AfterViewInit {
       this.isArchive = false;
     }
   }
+
+  private parseAdvancedData(data: any): any {
+    return typeof data === 'string' ? Functions.JSON_parse(data) || {} : data || {};
+  }
+
+  private getRtWatcherServerFromAdvanced(advanced: any, exportData: any): string {
+    const exportRtWatcherServer = exportData?.rtwatcher?.server || exportData?.rtWatcherServer;
+    if (exportRtWatcherServer) {
+      return exportRtWatcherServer;
+    }
+    const rtWatcherSetting = advanced?.data
+      ?.map(i => this.parseAdvancedData(i.data))
+      .find(data => data?.rtwatcher?.server || data?.rtWatcherServer);
+    return rtWatcherSetting?.rtwatcher?.server || rtWatcherSetting?.rtWatcherServer || '';
+  }
+
   ngAfterViewInit() {
     setTimeout(() => {
       this.ready.emit({});
