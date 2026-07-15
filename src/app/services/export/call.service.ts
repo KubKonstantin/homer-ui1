@@ -11,7 +11,7 @@ export type FileType = 'Pcap' | 'SIPP' | 'Text' | 'Report';
 export class ExportCallService {
 
     private url = `${environment.apiUrl}/export/call`;
-    private rawRtpExportUrl = `${environment.apiUrl}/proxy/rtwatcher/extract`;
+    private rawRtpExportUrl = `${environment.rtWatcherServer.replace(/\/+$/, '')}/api/extract/`;
 
     constructor(private http: HttpClient) { }
 
