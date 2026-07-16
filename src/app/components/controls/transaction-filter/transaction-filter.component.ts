@@ -132,10 +132,12 @@ export class TransactionFilterComponent implements OnInit {
                     selected:
                         this.isAdvancedDefaultFilter ?
                             this.getPayloadFromAdvancedSettings(typeName) :
-                            (this.getPayloadFromLocalStorage(typeName) || (
-                                typeName !== FlowItemType.RTCP &&
-                                typeName !== FlowItemType.RTP
-                            )),
+                            (this.getPayloadFromLocalStorage(typeName) || ![
+                                FlowItemType.RTCP,
+                                FlowItemType.RTP,
+                                FlowItemType.LOG,
+                                'HEP-LOG',
+                            ].includes(typeName)),
                 };
             });
         console.log('checkboxListFilterPayloadType', this.checkboxListFilterPayloadType);
