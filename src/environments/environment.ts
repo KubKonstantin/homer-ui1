@@ -23,7 +23,7 @@ let _environment: any = {
 };
 
 if (typeof self?.GLOBAL_CONFIG == "object") {
-  const { PREFIX, API_PATH } = self?.GLOBAL_CONFIG || {};
+  const { PREFIX, API_PATH, RTWATCHER_API_PATH } = self?.GLOBAL_CONFIG || {};
   if (API_PATH) {
       _environment.apiUrl = API_PATH;
   } else if (PREFIX) {
