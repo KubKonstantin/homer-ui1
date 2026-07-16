@@ -169,7 +169,7 @@
     "amountMessagesTransaction": "Quantity of Messages in this Transaction"
   },
   "login": {
-    "header": "@LINK.homer@ Login",
+    "header": "SberHealth Login",
     "username": "@LINK.login.username@",
     "password": "@LINK.login.password@",
     "authentication": "Authentication",
