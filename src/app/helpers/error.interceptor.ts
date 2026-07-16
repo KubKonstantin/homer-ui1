@@ -19,6 +19,41 @@ export class ErrorInterceptor implements HttpInterceptor {
         private translateService: TranslateService
     ) { }
         errMessages = []
+
+    private getErrorMessageFromBody(body: any): string {
+        if (!body) {
+            return '';
+        }
+        if (typeof body === 'string') {
+            return body;
+        }
+        if (body.message) {
+            return body.message;
+        }
+        if (body.error) {
+            return typeof body.error === 'string' ? body.error : JSON.stringify(body.error);
+        }
+        if (body.detail) {
+            return typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+        }
+        if (body.errors) {
+            return typeof body.errors === 'string' ? body.errors : JSON.stringify(body.errors);
+        }
+        return '';
+    }
+
+    private async getHttpErrorMessage(err: HttpErrorResponse): Promise<string> {
+        if (err?.error instanceof Blob) {
+            const text = await err.error.text();
+            try {
+                return this.getErrorMessageFromBody(JSON.parse(text)) || text;
+            } catch (e) {
+                return text;
+            }
+        }
+        return this.getErrorMessageFromBody(err?.error) || err?.statusText;
+    }
+
     intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         return next.handle(request).pipe(catchError(err => {
             if(err instanceof HttpErrorResponse){
@@ -49,6 +84,18 @@ export class ErrorInterceptor implements HttpInterceptor {
                     });
 
                 }
+            }
+            if (err.status === 422) {
+                setTimeout(async () => {
+                    const message = await this.getHttpErrorMessage(err);
+                    this.alertService.error({
+                        isTranslation: true,
+                        message: 'notifications.error.validationError',
+                        translationParams: { message },
+                        fullObject: JSON.stringify(err)
+                    });
+                }, 0);
+                return throwError(err?.error?.message || err?.statusText);
             }
             if(err?.name === 'HttpErrorResponse' && err?.message.match(/i18n/) ) {
                 console.log('%cBroken translate file, please contact Support Service.','font-weight: bold; margin:10px;border-radius:3px;padding:10px;background:black;color:white')

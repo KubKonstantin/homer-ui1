@@ -5,4 +5,5 @@ export const environment = {
   environment: VERSION,
   isHomerAPI: true,
   apiUrl: location.protocol + '//' + (location.host) + '/api/v3',
+  rtWatcherServer: location.protocol + '//' + location.host,
 };
