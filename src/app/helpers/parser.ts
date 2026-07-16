@@ -640,11 +640,21 @@ export class TransactionServiceProcessor {
     let diffTs = 0;
     const getAliasByIp = (ip) => this.getAliasByIp(ip, alias);
     messages.forEach((message) => {
-      if (!message.micro_ts) {
+      const hasUnixTimestamp =
+        message.timeSeconds !== null &&
+        message.timeSeconds !== undefined &&
+        message.timeSeconds !== '' &&
+        Number.isFinite(Number(message.timeSeconds));
+      if (hasUnixTimestamp) {
+        // SIP and native HEP-LOG timestamps are Unix values. Prefer them over
+        // timezone-bearing date strings so all flow items use the selected zone.
+        message.micro_ts =
+          Number(message.timeSeconds) * 1000 +
+          Number(message.timeUseconds || 0) / 1000;
+      } else if (!message.micro_ts) {
         message.micro_ts =
           message.create_date ||
-          message.create_ts ||
-          message.timeSeconds * 1000 + message.timeUseconds;
+          message.create_ts;
       }
     });
     return messages
