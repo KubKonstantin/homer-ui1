@@ -644,7 +644,7 @@ export class TransactionServiceProcessor {
         message.micro_ts =
           message.create_date ||
           message.create_ts ||
-          message.timeSeconds * 1000 + message.timeUseconds;
+          message.timeSeconds * 1000 + message.timeUseconds / 1000;
       }
     });
     return messages
