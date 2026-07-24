@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable, EMPTY } from 'rxjs';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '@environments/environment';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 @Injectable({
     providedIn: 'root'
@@ -57,8 +57,7 @@ export class ClickhouseSerivce {
         }
 
         let params = new HttpParams()
-            .set('default_format', 'JSONEachRow')
-            .set('query', query);
+            .set('default_format', 'JSONEachRow');
         if (config.database) {
             params = params.set('database', config.database);
         }
@@ -69,8 +68,18 @@ export class ClickhouseSerivce {
             params = params.set('password', config.password);
         }
 
-        return this.http.get(this.normalizeUrl(config.host), { params, responseType: 'text' })
-            .pipe(map(response => ({ data: this.parseJsonEachRow(response) })));
+        const url = this.normalizeUrl(config.host);
+        return this.http.post(url, query, {
+            params,
+            responseType: 'text',
+            headers: new HttpHeaders({ 'Content-Type': 'text/plain; charset=UTF-8' })
+        }).pipe(
+            catchError(() => this.http.get(url, {
+                params: params.set('query', query),
+                responseType: 'text'
+            })),
+            map(response => ({ data: this.parseJsonEachRow(response) }))
+        );
     }
 
     private normalizeUrl(url: string): string {
