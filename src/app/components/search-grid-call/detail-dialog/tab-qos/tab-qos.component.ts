@@ -303,14 +303,17 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     };
   }
 
-  private buildNisqaQuery(settings: any): string {
+  private buildNisqaQuery(settings: any, includeChannel = true): string {
     const { from, to } = this.getTimeRange();
     const timeFilter = from && to
       ? `${settings.timeColumn} BETWEEN toDateTime(${from}) AND toDateTime(${to})`
       : '1 = 1';
     const callId = this.escapeClickhouseValue(this.callid);
 
-    return `SELECT call_id, start_sec, channel, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, channel, start_sec`;
+    const channelSelect = includeChannel ? 'channel, ' : '';
+    const channelOrder = includeChannel ? 'channel, ' : '';
+
+    return `SELECT call_id, start_sec, ${channelSelect}round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, ${channelOrder}start_sec`;
   }
 
   private getClickhouseRows(res: any): Array<any> {
@@ -404,8 +407,16 @@ export class TabQosComponent implements OnInit, AfterViewInit {
         this.isNISQALoaded = true;
         return;
       }
-      const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings), settings.clickhouse).toPromise();
-      this.nisqaRows = this.getClickhouseRows(res);
+      let rows: Array<any> = [];
+      try {
+        const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings), settings.clickhouse).toPromise();
+        rows = this.getClickhouseRows(res);
+      } catch (err) { }
+      if (!rows.length) {
+        const fallbackRes = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings, false), settings.clickhouse).toPromise();
+        rows = this.getClickhouseRows(fallbackRes).map(row => ({ ...row, channel: 0 }));
+      }
+      this.nisqaRows = rows;
       this.isNISQA = this.nisqaRows.length > 0;
       if (this.isNISQA) {
         this.prepareNisqaChart(this.nisqaRows);
