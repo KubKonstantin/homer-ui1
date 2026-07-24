@@ -61,22 +61,25 @@ export class ClickhouseSerivce {
         if (config.database) {
             params = params.set('database', config.database);
         }
-        if (config.user) {
+        let headers = new HttpHeaders({ 'Content-Type': 'text/plain; charset=UTF-8' });
+        if (config.user && config.password) {
+            headers = headers.set('Authorization', `Basic ${btoa(`${config.user}:${config.password}`)}`);
+        } else if (config.user) {
             params = params.set('user', config.user);
-        }
-        if (config.password) {
-            params = params.set('password', config.password);
         }
 
         const url = this.normalizeUrl(config.host);
         return this.http.post(url, query, {
             params,
             responseType: 'text',
-            headers: new HttpHeaders({ 'Content-Type': 'text/plain; charset=UTF-8' })
+            headers
         }).pipe(
             catchError(() => this.http.get(url, {
                 params: params.set('query', query),
-                responseType: 'text'
+                responseType: 'text',
+                headers: config.user && config.password
+                    ? new HttpHeaders({ 'Authorization': `Basic ${btoa(`${config.user}:${config.password}`)}` })
+                    : undefined
             })),
             map(response => ({ data: this.parseJsonEachRow(response) }))
         );
