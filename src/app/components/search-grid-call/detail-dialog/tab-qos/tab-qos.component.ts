@@ -308,11 +308,9 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     const timeFilter = from && to
       ? `${settings.timeColumn} BETWEEN toDateTime(${from}) AND toDateTime(${to})`
       : '1 = 1';
-    const entityType = this.sanitizeClickhouseIdentifier(settings.entityType, 'call_id');
-    const entityId = this.escapeClickhouseValue(settings.entityId);
     const callId = this.escapeClickhouseValue(this.callid);
 
-    return `SELECT call_id, channel, start_sec, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND ${entityType} = '${entityId}' AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, channel, start_sec`;
+    return `SELECT call_id, start_sec, channel, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, channel, start_sec`;
   }
 
   private getClickhouseRows(res: any): Array<any> {
