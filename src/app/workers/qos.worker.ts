@@ -353,9 +353,11 @@ class QosProcessor {
     })
 
     data = data.map(i => (i.raw = JSON.parse(i.raw), i))
-      .filter(({ raw }) => raw?.sender_information &&
-        raw?.sender_information?.packets &&
-        raw?.sender_information?.octets);
+      .filter(({ raw }) =>
+        raw &&
+        [200, 201, 202, 207].includes(Number(raw.type)) &&
+        (raw.sender_information || raw.report_blocks?.length)
+      );
     data.forEach(item => {
       const i = item.raw
 

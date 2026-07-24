@@ -16,6 +16,7 @@ import {
   ElementRef
 } from '@angular/core';
 import { PreferenceAdvancedService } from '@app/services';
+import { ClickhouseSerivce } from '@app/services/clickhouse.service';
 import { Chart, ChartType, ChartDataSets, ChartColor } from 'chart.js';
 import { Label, Color, BaseChartDirective } from '@xirenec/ng2-charts';
 import  moment from 'moment';
@@ -38,6 +39,7 @@ export class TabQosComponent implements OnInit, AfterViewInit {
   chartHeightRTP = 240;
   chartHeightRTCP
   @Input() callid;
+  @Input() snapShotTimeRange: any;
   @Input() dataItem: any;
   @Input() set qosData(val: any) {
 
@@ -104,6 +106,13 @@ export class TabQosComponent implements OnInit, AfterViewInit {
   public chartLegend = true;
 
   public chartDataRTCP: ChartDataSets[] = [];
+  public chartDataNISQA: ChartDataSets[] = [];
+  public chartLabelsNISQA: Label[] = [];
+  public chartOptionsNISQA: any;
+  public isNISQA = false;
+  public isNISQALoaded = false;
+  public nisqaRows: Array<any> = [];
+  public nisqaSummary: Array<any> = [];
 
   public listRTP = [];
 
@@ -116,7 +125,7 @@ export class TabQosComponent implements OnInit, AfterViewInit {
   worker: WorkerService;
   _isLoaded: boolean = false;
   mosFraction: boolean = true;
-  constructor(private cdr: ChangeDetectorRef, private _pas: PreferenceAdvancedService) {
+  constructor(private cdr: ChangeDetectorRef, private _pas: PreferenceAdvancedService, private _cs: ClickhouseSerivce) {
 
     this._pas.getAll().toPromise().then(advanced => {
       if (advanced && advanced.data) {
@@ -230,9 +239,124 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     }, []);
     this.aliases = this.dataItem.alias;
     this.initQOSData();
+    this.initNisqaData();
     this.color = Functions.getColorByString(this.callid, 75, 60, 1);
     this.cdr.detectChanges();
 
+  }
+
+
+  private parseAdvancedData(data: any): any {
+    return typeof data === 'string' ? Functions.JSON_parse(data) || {} : data || {};
+  }
+
+  private escapeClickhouseValue(value: any): string {
+    return `${value || ''}`.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  }
+
+  private sanitizeClickhouseIdentifier(value: any, fallback: string): string {
+    const identifier = `${value || fallback}`.replace(/[^a-zA-Z0-9_]/g, '');
+    return identifier || fallback;
+  }
+
+  private normalizeTimestamp(value: any): number {
+    const numericValue = Number(value || 0);
+    return numericValue > 9999999999 ? Math.floor(numericValue / 1000) : Math.floor(numericValue);
+  }
+
+  private getTimeRange(): { from: number, to: number } {
+    const from = this.normalizeTimestamp(this.snapShotTimeRange?.from);
+    const to = this.normalizeTimestamp(this.snapShotTimeRange?.to);
+    if (from && to) {
+      return { from, to };
+    }
+    const timestamps = (this.dataItem?.data?.messages || [])
+      .map(i => this.normalizeTimestamp(i.create_date || i.micro_ts || i.timestamp))
+      .filter(i => i > 0);
+    const min = Math.min(...timestamps);
+    const max = Math.max(...timestamps);
+    return Number.isFinite(min) && Number.isFinite(max) ? { from: min - 300, to: max + 300 } : { from: 0, to: 0 };
+  }
+
+  private getNisqaSettings(advanced: any): any {
+    const setting = advanced?.data
+      ?.find(i => i.category === 'system' && ['nisqa', 'clickhouse_nisqa'].includes(i.param));
+    const data = this.parseAdvancedData(setting?.data);
+    return {
+      enabled: data.enabled !== false,
+      database: this.sanitizeClickhouseIdentifier(data.database || data.db, 'nisqa'),
+      table: this.sanitizeClickhouseIdentifier(data.table, 'nisqa_chunks'),
+      timeColumn: this.sanitizeClickhouseIdentifier(data.timeColumn, 'ts'),
+      entityType: data.entity_type || data.entityType || 'call_id',
+      entityId: data.entity_id || data.entityId || this.callid,
+    };
+  }
+
+  private buildNisqaQuery(settings: any): string {
+    const { from, to } = this.getTimeRange();
+    const timeFilter = from && to
+      ? `${settings.timeColumn} BETWEEN toDateTime(${from}) AND toDateTime(${to})`
+      : '1 = 1';
+    const entityType = this.sanitizeClickhouseIdentifier(settings.entityType, 'call_id');
+    const entityId = this.escapeClickhouseValue(settings.entityId);
+    const callId = this.escapeClickhouseValue(this.callid);
+
+    return `SELECT call_id, start_sec, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND ${entityType} = '${entityId}' AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, start_sec`;
+  }
+
+  private getClickhouseRows(res: any): Array<any> {
+    if (Array.isArray(res?.data)) {
+      return res.data;
+    }
+    return Array.isArray(res) ? res : [];
+  }
+
+  private prepareNisqaChart(rows: Array<any>) {
+    const metrics = ['mos', 'noi', 'disc', 'col', 'loud'];
+    this.chartLabelsNISQA = rows.map(row => `${row.start_sec}s`);
+    this.chartDataNISQA = metrics.map(metric => ({
+      fill: false,
+      data: rows.map(row => Number(row[metric])),
+      label: metric.toUpperCase()
+    }));
+    this.nisqaSummary = metrics.map(metric => {
+      const values = rows.map(row => Number(row[metric])).filter(value => Number.isFinite(value));
+      return {
+        name: metric.toUpperCase(),
+        value: values.length ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2) : '-'
+      };
+    });
+    this.chartOptionsNISQA = {
+      ...this.chartOptions,
+      legend: { display: true },
+      scales: {
+        yAxes: [{
+          ticks: { beginAtZero: true }
+        }]
+      }
+    };
+  }
+
+  private async initNisqaData() {
+    try {
+      const advanced = await this._pas.getAll().toPromise();
+      const settings = this.getNisqaSettings(advanced);
+      if (!settings.enabled || !this.callid) {
+        this.isNISQALoaded = true;
+        return;
+      }
+      const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings)).toPromise();
+      this.nisqaRows = this.getClickhouseRows(res);
+      this.isNISQA = this.nisqaRows.length > 0;
+      if (this.isNISQA) {
+        this.prepareNisqaChart(this.nisqaRows);
+        this.haveData.emit(true);
+      }
+    } catch (err) {
+      this.isNISQA = false;
+    }
+    this.isNISQALoaded = true;
+    this.cdr.detectChanges();
   }
 
   onChangeCheckBoxRTCP(item: any, type: any, base = false) {
