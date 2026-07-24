@@ -113,6 +113,9 @@ export class TabQosComponent implements OnInit, AfterViewInit {
   public isNISQALoaded = false;
   public nisqaRows: Array<any> = [];
   public nisqaSummary: Array<any> = [];
+  public nisqaMetrics = ['mos', 'noi', 'disc', 'col', 'loud'];
+  public nisqaMetricFilters = this.nisqaMetrics.map(metric => ({ name: metric.toUpperCase(), value: metric, checked: true }));
+  public nisqaChannelFilters: Array<any> = [];
 
   public listRTP = [];
 
@@ -309,7 +312,7 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     const entityId = this.escapeClickhouseValue(settings.entityId);
     const callId = this.escapeClickhouseValue(this.callid);
 
-    return `SELECT call_id, start_sec, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND ${entityType} = '${entityId}' AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, start_sec`;
+    return `SELECT call_id, channel, start_sec, round(mos,2) AS mos, round(noi,2) AS noi, round(disc,2) AS disc, round(col,2) AS col, round(loud,2) AS loud FROM ${settings.database}.${settings.table} WHERE ${timeFilter} AND ${entityType} = '${entityId}' AND call_id = '${callId}' AND '${callId}' != '' ORDER BY call_id, channel, start_sec`;
   }
 
   private getClickhouseRows(res: any): Array<any> {
@@ -319,16 +322,59 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     return Array.isArray(res) ? res : [];
   }
 
-  private prepareNisqaChart(rows: Array<any>) {
-    const metrics = ['mos', 'noi', 'disc', 'col', 'loud'];
-    this.chartLabelsNISQA = rows.map(row => `${row.start_sec}s`);
-    this.chartDataNISQA = metrics.map(metric => ({
-      fill: false,
-      data: rows.map(row => Number(row[metric])),
-      label: metric.toUpperCase()
+  private getNisqaChannel(row: any): string {
+    const channel = row?.channel;
+    return channel === undefined || channel === null || channel === '' ? '0' : String(channel);
+  }
+
+  private getNisqaChannelLabel(channel: string): string {
+    return `CH${channel}`;
+  }
+
+  private syncNisqaChannelFilters(rows: Array<any>) {
+    const checkedByChannel = this.nisqaChannelFilters.reduce((acc, item) => {
+      acc[item.value] = item.checked;
+      return acc;
+    }, {});
+    const channels = Array.from(new Set(rows.map(row => this.getNisqaChannel(row))))
+      .sort((a, b) => Number(a) - Number(b));
+    this.nisqaChannelFilters = channels.map(channel => ({
+      name: this.getNisqaChannelLabel(channel),
+      value: channel,
+      checked: checkedByChannel[channel] !== false
     }));
-    this.nisqaSummary = metrics.map(metric => {
-      const values = rows.map(row => Number(row[metric])).filter(value => Number.isFinite(value));
+  }
+
+  private prepareNisqaChart(rows: Array<any>) {
+    this.syncNisqaChannelFilters(rows);
+    const selectedMetrics = this.nisqaMetricFilters.filter(item => item.checked).map(item => item.value);
+    const selectedChannels = this.nisqaChannelFilters.filter(item => item.checked).map(item => item.value);
+    const startSecs = Array.from(new Set(rows.map(row => row.start_sec)))
+      .sort((a, b) => Number(a) - Number(b));
+
+    this.chartLabelsNISQA = startSecs.map(startSec => `${startSec}s`);
+    this.chartDataNISQA = [];
+
+    selectedChannels.forEach(channel => {
+      const channelRows = rows.filter(row => this.getNisqaChannel(row) === channel);
+      selectedMetrics.forEach(metric => {
+        this.chartDataNISQA.push({
+          fill: false,
+          data: startSecs.map(startSec => {
+            const row = channelRows.find(item => String(item.start_sec) === String(startSec));
+            const value = row ? Number(row[metric]) : NaN;
+            return Number.isFinite(value) ? value : null;
+          }),
+          label: `${this.getNisqaChannelLabel(channel)} ${metric.toUpperCase()}`
+        });
+      });
+    });
+
+    this.nisqaSummary = selectedMetrics.map(metric => {
+      const values = rows
+        .filter(row => selectedChannels.includes(this.getNisqaChannel(row)))
+        .map(row => Number(row[metric]))
+        .filter(value => Number.isFinite(value));
       return {
         name: metric.toUpperCase(),
         value: values.length ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2) : '-'
@@ -336,6 +382,8 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     });
     this.chartOptionsNISQA = {
       ...this.chartOptions,
+      showLines: true,
+      spanGaps: true,
       legend: { display: true },
       scales: {
         yAxes: [{
@@ -343,6 +391,11 @@ export class TabQosComponent implements OnInit, AfterViewInit {
         }]
       }
     };
+  }
+
+  onChangeNisqaFilter() {
+    this.prepareNisqaChart(this.nisqaRows);
+    this.cdr.detectChanges();
   }
 
   private async initNisqaData() {
