@@ -57,7 +57,8 @@ export class ClickhouseSerivce {
         }
 
         let params = new HttpParams()
-            .set('default_format', 'JSONEachRow');
+            .set('default_format', 'JSONEachRow')
+            .set('query', query);
         if (config.database) {
             params = params.set('database', config.database);
         }
@@ -68,7 +69,7 @@ export class ClickhouseSerivce {
             params = params.set('password', config.password);
         }
 
-        return this.http.post(this.normalizeUrl(config.host), query, { params, responseType: 'text' })
+        return this.http.get(this.normalizeUrl(config.host), { params, responseType: 'text' })
             .pipe(map(response => ({ data: this.parseJsonEachRow(response) })));
     }
 
