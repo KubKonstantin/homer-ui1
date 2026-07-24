@@ -49,7 +49,7 @@
 
                 <ng-template ngSwitchCase="QoS">
                     <app-tab-qos [callid]="titleId" [dataItem]="sipDataItem?.data" [qosData]="_qosData"
-                        [id]="IdFromCallID" (haveData)="onTabQos($event)" (ready)="showLoader=false"></app-tab-qos>
+                        [snapShotTimeRange]="snapShotTimeRange" [id]="IdFromCallID" (haveData)="onTabQos($event)" (ready)="showLoader=false"></app-tab-qos>
                 </ng-template>
                 <ng-template ngSwitchCase="Events">
                     <app-tab-events [dataItem]="sipDataItem" (ready)="showLoader=false"></app-tab-events>
