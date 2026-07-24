@@ -191,3 +191,41 @@
 	align-items: flex-end;
 	box-shadow: 0 0 5px red;
 }
+.nisqa-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+}
+.nisqa-summary-card {
+    min-width: 90px;
+    padding: 8px 12px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    text-align: center;
+}
+.nisqa-summary-title {
+    font-size: 11px;
+    color: #777;
+}
+.nisqa-summary-value {
+    font-size: 20px;
+    font-weight: 600;
+}
+.nisqa-table {
+    width: 100%;
+    margin: 8px;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.nisqa-table th,
+.nisqa-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+}
+.nisqa-table th:first-child,
+.nisqa-table td:first-child {
+    text-align: left;
+}

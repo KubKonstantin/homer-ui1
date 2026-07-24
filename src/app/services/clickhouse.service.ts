@@ -50,6 +50,10 @@ export class ClickhouseSerivce {
             return EMPTY;
         }
     }
+    getNisqaMetrics(query: string): Observable<any> {
+        return this.getRawQuery({ query });
+    }
+
     getClickhouseTimeDate(database, table): Observable<any> {
         const data = {
             query: `SELECT name FROM system.columns WHERE database = '${database}'
