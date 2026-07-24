@@ -226,4 +226,53 @@
             </div>
         </div>
     </mat-tab>
+    <mat-tab label="NISQA" *ngIf="isNISQA && !isError" style="height: 100%;">
+        <div class='tab'>
+            <div class="responsive" [style.min-height.px]='250'>
+                <div [style.min-width.%]="100" [style.height.px]="240" [style.min-height.px]='250' style="overflow-x: auto;">
+                    <div class="chart-container">
+                        <canvas
+                            baseChart
+                            [datasets]="chartDataNISQA"
+                            [labels]="chartLabelsNISQA"
+                            [options]="chartOptionsNISQA"
+                            [legend]="chartLegend"
+                            [chartType]="'line'">
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="responsive">
+                <div class="nisqa-summary">
+                    <div class="nisqa-summary-card" *ngFor="let item of nisqaSummary">
+                        <div class="nisqa-summary-title">{{ item.name }}</div>
+                        <div class="nisqa-summary-value">{{ item.value }}</div>
+                    </div>
+                </div>
+                <table class="nisqa-table">
+                    <thead>
+                        <tr>
+                            <th>start_sec</th>
+                            <th>MOS</th>
+                            <th>NOI</th>
+                            <th>DISC</th>
+                            <th>COL</th>
+                            <th>LOUD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of nisqaRows">
+                            <td>{{ item.start_sec }}</td>
+                            <td>{{ item.mos }}</td>
+                            <td>{{ item.noi }}</td>
+                            <td>{{ item.disc }}</td>
+                            <td>{{ item.col }}</td>
+                            <td>{{ item.loud }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </mat-tab>
+
 </mat-tab-group>
