@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable, EMPTY } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '@environments/environment';
+import { map } from 'rxjs/operators';
 
 @Injectable({
     providedIn: 'root'
@@ -50,8 +51,37 @@ export class ClickhouseSerivce {
             return EMPTY;
         }
     }
-    getNisqaMetrics(query: string): Observable<any> {
-        return this.getRawQuery({ query });
+    getNisqaMetrics(query: string, config: any = {}): Observable<any> {
+        if (!config?.host) {
+            return this.getRawQuery({ query });
+        }
+
+        let params = new HttpParams()
+            .set('default_format', 'JSONEachRow');
+        if (config.database) {
+            params = params.set('database', config.database);
+        }
+        if (config.user) {
+            params = params.set('user', config.user);
+        }
+        if (config.password) {
+            params = params.set('password', config.password);
+        }
+
+        return this.http.post(this.normalizeUrl(config.host), query, { params, responseType: 'text' })
+            .pipe(map(response => ({ data: this.parseJsonEachRow(response) })));
+    }
+
+    private normalizeUrl(url: string): string {
+        return `${url}`.replace(/\/+$/, '');
+    }
+
+    private parseJsonEachRow(response: string): Array<any> {
+        return `${response || ''}`
+            .split('\n')
+            .map(row => row.trim())
+            .filter(row => row.length > 0)
+            .map(row => JSON.parse(row));
     }
 
     getClickhouseTimeDate(database, table): Observable<any> {

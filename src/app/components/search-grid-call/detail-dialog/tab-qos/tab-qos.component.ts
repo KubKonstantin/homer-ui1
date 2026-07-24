@@ -282,11 +282,19 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     const setting = advanced?.data
       ?.find(i => i.category === 'system' && ['nisqa', 'clickhouse_nisqa'].includes(i.param));
     const data = this.parseAdvancedData(setting?.data);
+    const clickhouse = data.clickhouse || {};
+    const database = this.sanitizeClickhouseIdentifier(data.database || data.db || clickhouse.database, 'nisqa');
     return {
       enabled: data.enabled !== false,
-      database: this.sanitizeClickhouseIdentifier(data.database || data.db, 'nisqa'),
-      table: this.sanitizeClickhouseIdentifier(data.table, 'nisqa_chunks'),
-      timeColumn: this.sanitizeClickhouseIdentifier(data.timeColumn, 'ts'),
+      clickhouse: {
+        host: data.host || clickhouse.host || '',
+        user: data.user || clickhouse.user || '',
+        password: data.password || clickhouse.password || '',
+        database,
+      },
+      database,
+      table: this.sanitizeClickhouseIdentifier(data.table || clickhouse.table, 'nisqa_chunks'),
+      timeColumn: this.sanitizeClickhouseIdentifier(data.timeColumn || clickhouse.timeColumn, 'ts'),
       entityType: data.entity_type || data.entityType || 'call_id',
       entityId: data.entity_id || data.entityId || this.callid,
     };
@@ -345,7 +353,7 @@ export class TabQosComponent implements OnInit, AfterViewInit {
         this.isNISQALoaded = true;
         return;
       }
-      const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings)).toPromise();
+      const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings), settings.clickhouse).toPromise();
       this.nisqaRows = this.getClickhouseRows(res);
       this.isNISQA = this.nisqaRows.length > 0;
       if (this.isNISQA) {
