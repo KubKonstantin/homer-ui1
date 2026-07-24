@@ -169,7 +169,7 @@
     "amountMessagesTransaction": "Quantity of Messages in this Transaction"
   },
   "login": {
-    "header": "@LINK.homer@ Login",
+    "header": "SberHealth Login",
     "username": "@LINK.login.username@",
     "password": "@LINK.login.password@",
     "authentication": "Authentication",
@@ -235,6 +235,7 @@
       "invalidJWT": "Invalid JWT Token, please use your Credentials to log in again",
       "mappingIssue": "Could not retrieve the correct Setting for this Mapping",
       "invalidJSON": "The Server returned an invalid JSON response.",
+      "validationError": "Validation error: {{message}}",
       "preferenceAdd": "{{page}} couldn't be added",
       "preferenceCopy": "{{page}} @LINK.sentences.failedCopy@",
       "preferenceUpdate": "{{page}} couldn't be updated"
@@ -459,6 +460,7 @@
     "exportFlowAsPNG": "Export Flow as PNG",
     "shareCloud": "Share Cloud",
     "exportText": "Export TEXT",
+    "exportRawRtp": "Export RAW RTP",
     "shareLink": "Share link",
     "openShareLink": "Open Share Link",
     "copyShareLink": "Copy Share Link",
