@@ -249,9 +249,24 @@
                         <div class="nisqa-summary-value">{{ item.value }}</div>
                     </div>
                 </div>
+                <div class="nisqa-filters">
+                    <mat-card class="nisqa-filter-card">
+                        <div class="proto-header">Metrics</div>
+                        <mat-checkbox *ngFor="let metric of nisqaMetricFilters" [(ngModel)]="metric.checked" (change)="onChangeNisqaFilter()">
+                            {{ metric.name }}
+                        </mat-checkbox>
+                    </mat-card>
+                    <mat-card class="nisqa-filter-card">
+                        <div class="proto-header">Channels</div>
+                        <mat-checkbox *ngFor="let channel of nisqaChannelFilters" [(ngModel)]="channel.checked" (change)="onChangeNisqaFilter()">
+                            {{ channel.name }}
+                        </mat-checkbox>
+                    </mat-card>
+                </div>
                 <table class="nisqa-table">
                     <thead>
                         <tr>
+                            <th>channel</th>
                             <th>start_sec</th>
                             <th>MOS</th>
                             <th>NOI</th>
@@ -262,6 +277,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let item of nisqaRows">
+                            <td>CH{{ item.channel === undefined || item.channel === null || item.channel === '' ? 0 : item.channel }}</td>
                             <td>{{ item.start_sec }}</td>
                             <td>{{ item.mos }}</td>
                             <td>{{ item.noi }}</td>
