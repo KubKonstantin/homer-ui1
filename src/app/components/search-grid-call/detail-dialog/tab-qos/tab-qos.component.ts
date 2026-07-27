@@ -303,9 +303,9 @@ export class TabQosComponent implements OnInit, AfterViewInit {
     };
   }
 
-  private buildNisqaQuery(settings: any, includeChannel = true): string {
+  private buildNisqaQuery(settings: any, includeChannel = true, includeTimeFilter = true): string {
     const { from, to } = this.getTimeRange();
-    const timeFilter = from && to
+    const timeFilter = includeTimeFilter && from && to
       ? `${settings.timeColumn} BETWEEN toDateTime(${from}) AND toDateTime(${to})`
       : '1 = 1';
     const callId = this.escapeClickhouseValue(this.callid);
@@ -407,14 +407,28 @@ export class TabQosComponent implements OnInit, AfterViewInit {
         this.isNISQALoaded = true;
         return;
       }
-      let rows: Array<any> = [];
-      try {
-        const res = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings), settings.clickhouse).toPromise();
-        rows = this.getClickhouseRows(res);
-      } catch (err) { }
+      const getRows = async (includeChannel = true, includeTimeFilter = true): Promise<Array<any>> => {
+        try {
+          const res = await this._cs.getNisqaMetrics(
+            this.buildNisqaQuery(settings, includeChannel, includeTimeFilter),
+            settings.clickhouse
+          ).toPromise();
+          const rows = this.getClickhouseRows(res);
+          return includeChannel ? rows : rows.map(row => ({ ...row, channel: 0 }));
+        } catch (err) {
+          return [];
+        }
+      };
+
+      let rows = await getRows(true, true);
       if (!rows.length) {
-        const fallbackRes = await this._cs.getNisqaMetrics(this.buildNisqaQuery(settings, false), settings.clickhouse).toPromise();
-        rows = this.getClickhouseRows(fallbackRes).map(row => ({ ...row, channel: 0 }));
+        rows = await getRows(true, false);
+      }
+      if (!rows.length) {
+        rows = await getRows(false, true);
+      }
+      if (!rows.length) {
+        rows = await getRows(false, false);
       }
       this.nisqaRows = rows;
       this.isNISQA = this.nisqaRows.length > 0;
